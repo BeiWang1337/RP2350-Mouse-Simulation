@@ -1,0 +1,155 @@
+#include "usb_descriptors.h"
+#include "bsp/board_api.h"
+#include "tusb.h"
+
+// 设备描述符
+tusb_desc_device_t const desc_device = {
+    .bLength = sizeof(tusb_desc_device_t),
+    .bDescriptorType = TUSB_DESC_DEVICE,
+    .bcdUSB = 0x0200,
+    .bDeviceClass = 0x00, 
+    .bDeviceSubClass = 0x00,
+    .bDeviceProtocol = 0x00,
+    .bMaxPacketSize0 = CFG_TUD_ENDPOINT0_SIZE,
+    .idVendor = USB_VID,
+    .idProduct = USB_PID,
+    .bcdDevice = USB_FIRMWARE_VERSION,
+    .iManufacturer = 0x01,
+    .iProduct = 0x02,
+    .iSerialNumber = 0x03, 
+    .bNumConfigurations = 0x01
+};
+
+uint8_t const *tud_descriptor_device_cb(void) {
+  return (uint8_t const *) &desc_device;
+}
+
+// ============== 1:1 提取还原 ATK 报告描述符 ==============
+// Interface 0: 键盘 (65 Bytes)
+uint8_t const hid_report_desc_keyboard[] = {
+  0x05, 0x01, 0x09, 0x06, 0xA1, 0x01, 0x05, 0x07, 0x19, 0xE0, 0x29, 0xE7, 0x15, 0x00, 0x25, 0x01,
+  0x75, 0x01, 0x95, 0x08, 0x81, 0x02, 0x95, 0x01, 0x75, 0x08, 0x81, 0x01, 0x05, 0x07, 0x19, 0x00,
+  0x2A, 0xFF, 0x00, 0x95, 0x06, 0x75, 0x08, 0x15, 0x00, 0x26, 0xFF, 0x00, 0x81, 0x00, 0x05, 0x08,
+  0x19, 0x01, 0x29, 0x05, 0x95, 0x05, 0x75, 0x01, 0x91, 0x02, 0x95, 0x01, 0x75, 0x03, 0x91, 0x01,
+  0xC0
+};
+
+// Interface 1: 鼠标 16 位格式 (79 Bytes)
+uint8_t const hid_report_desc_mouse[] = {
+  0x05, 0x01, 0x09, 0x02, 0xA1, 0x01, 0x85, 0x02,
+  0x09, 0x01, 0xA1, 0x00,
+  0x05, 0x09, 0x19, 0x01, 0x29, 0x05, 0x15, 0x00, 0x25, 0x01,
+  0x75, 0x01, 0x95, 0x05, 0x81, 0x02,
+  0x95, 0x03, 0x81, 0x01,
+  0x05, 0x01, 0x09, 0x30, 0x09, 0x31,
+  0x16, 0x01, 0x80, 0x26, 0xFF, 0x7F,
+  0x75, 0x10, 0x95, 0x02, 0x81, 0x06,
+  0x09, 0x38, 0x15, 0x81, 0x25, 0x7F,
+  0x75, 0x08, 0x95, 0x01, 0x81, 0x06,
+  0xC0, 0xC0
+};
+
+_Static_assert(sizeof(hid_report_desc_mouse) == 64,
+               "mouse report descriptor length mismatch");
+
+// Interface 2: 高级系统键及附加指令 (121 Bytes)
+uint8_t const hid_report_desc_advanced[] = {
+  0x05, 0x0C, 0x09, 0x01, 0xA1, 0x01, 0x85, 0x01, 0x19, 0x00, 0x2A, 0x3C, 0x03, 0x15, 0x00, 0x26,
+  0x3C, 0x03, 0x95, 0x01, 0x75, 0x10, 0x81, 0x00, 0xC0, 0x05, 0x01, 0x09, 0x80, 0xA1, 0x01, 0x85,
+  0x02, 0x05, 0x01, 0x19, 0x81, 0x29, 0x83, 0x15, 0x00, 0x25, 0x01, 0x95, 0x03, 0x75, 0x01, 0x81,
+  0x02, 0x95, 0x01, 0x75, 0x05, 0x81, 0x01, 0xC0, 0x06, 0x00, 0xFF, 0x09, 0x01, 0xA1, 0x01, 0x85,
+  0x03, 0x25, 0xFF, 0x09, 0x01, 0x75, 0x08, 0x95, 0x3F, 0xB1, 0x02, 0xC0, 0x06, 0x01, 0xFF, 0x09,
+  0x01, 0xA1, 0x01, 0x85, 0x04, 0x25, 0xFF, 0x09, 0x01, 0x75, 0x08, 0x95, 0x3F, 0xB1, 0x02, 0xC0,
+  0x05, 0x01, 0x09, 0x06, 0xA1, 0x01, 0x85, 0x05, 0x05, 0x07, 0x15, 0x00, 0x25, 0x01, 0x19, 0x00,
+  0x29, 0x77, 0x95, 0x78, 0x75, 0x01, 0x81, 0x02, 0xC0
+}; 
+
+uint8_t const hid_report_desc_vendor[] = {
+  // Exact Zero wireless MI_03 report descriptor (36 bytes).
+  // Usage Page FF05, Report ID 08, 63-byte input and output payloads.
+  0x06, 0x05, 0xFF, 0x09, 0x01, 0xA1, 0x01, 0x85, 0x08,
+  0x15, 0x00, 0x26, 0xFF, 0x00, 0x75, 0x08, 0x95, 0x3F,
+  0x09, 0x03, 0x81, 0x02,
+  0x15, 0x00, 0x26, 0xFF, 0x00, 0x75, 0x08, 0x95, 0x3F,
+  0x09, 0x02, 0x91, 0x02,
+  0xC0
+};
+
+uint8_t const *tud_hid_descriptor_report_cb(uint8_t itf) {
+  if (itf == ITF_NUM_KEYBOARD) return hid_report_desc_keyboard;
+  if (itf == ITF_NUM_MOUSE)    return hid_report_desc_mouse;
+  if (itf == ITF_NUM_ADVANCED) return hid_report_desc_advanced;
+  if (itf == ITF_NUM_VENDOR)   return hid_report_desc_vendor;
+  return NULL;
+}
+
+// ============== 物理端点完美复刻 ==============
+#define EPNUM_KEYBOARD_IN 0x81
+#define EPNUM_MOUSE_IN    0x82
+#define EPNUM_ADVANCED_IN 0x83
+#define EPNUM_VENDOR_IN   0x84
+#define EPNUM_VENDOR_OUT  0x04 
+
+// ATK 自带一个具有 OUT 通道的端点
+#define SIM_TUD_HID_INOUT_DESC_LEN 32
+#define SIM_TUD_HID_INOUT_DESCRIPTOR(_itfnum, _stridx, _boot_protocol, _report_desc_len, _epout, _epin, _ep_size, _ep_interval) \
+  0x09, TUSB_DESC_INTERFACE, _itfnum, 0, 2, TUSB_CLASS_HID, 0x00, _boot_protocol, _stridx, \
+  0x09, HID_DESC_TYPE_HID, U16_TO_U8S_LE(0x0111), 0, 1, HID_DESC_TYPE_REPORT, U16_TO_U8S_LE(_report_desc_len), \
+  0x07, TUSB_DESC_ENDPOINT, _epin, TUSB_XFER_INTERRUPT, U16_TO_U8S_LE(_ep_size), _ep_interval, \
+  0x07, TUSB_DESC_ENDPOINT, _epout, TUSB_XFER_INTERRUPT, U16_TO_U8S_LE(_ep_size), _ep_interval
+
+#define CONFIG_TOTAL_LEN (TUD_CONFIG_DESC_LEN + 3 * TUD_HID_DESC_LEN + SIM_TUD_HID_INOUT_DESC_LEN) // 116 Bytes
+
+uint8_t const desc_configuration[] = {
+    // 总配置描述符
+    TUD_CONFIG_DESCRIPTOR(1, ITF_NUM_TOTAL, 0, CONFIG_TOTAL_LEN,
+                          TUSB_DESC_CONFIG_ATT_REMOTE_WAKEUP,
+                          USB_MAX_POWER_MA),
+
+    // Interface 0: 键盘 (端点1, 大小8, 轮询8)
+    TUD_HID_DESCRIPTOR(ITF_NUM_KEYBOARD, 0, HID_ITF_PROTOCOL_KEYBOARD, sizeof(hid_report_desc_keyboard), EPNUM_KEYBOARD_IN, 8, 8),
+
+    // Interface 1: 鼠标 (端点2, 大小8, 轮询1)
+    TUD_HID_DESCRIPTOR(ITF_NUM_MOUSE, 0, HID_ITF_PROTOCOL_MOUSE, sizeof(hid_report_desc_mouse), EPNUM_MOUSE_IN, 8, 1),
+
+    // Interface 2: 高级扩展 (端点3, 大小16, 轮询8)
+    TUD_HID_DESCRIPTOR(ITF_NUM_ADVANCED, 0, HID_ITF_PROTOCOL_NONE, sizeof(hid_report_desc_advanced), EPNUM_ADVANCED_IN, 16, 8),
+
+    // Interface 3: 厂商通信 IN/OUT (端点4, 大小64, 轮询8)
+    SIM_TUD_HID_INOUT_DESCRIPTOR(ITF_NUM_VENDOR, 0, HID_ITF_PROTOCOL_NONE, sizeof(hid_report_desc_vendor), EPNUM_VENDOR_OUT, EPNUM_VENDOR_IN, 64, 8)
+};
+
+uint8_t const *tud_descriptor_configuration_cb(uint8_t index) {
+  (void) index; return desc_configuration;
+}
+
+// 模拟原厂字符串索引
+char const *string_desc_arr[] = {
+    (const char[]) {0x09, 0x04}, // 0: English
+    USB_MANUFACTURER,            // 1
+    USB_PRODUCT,                 // 2
+    USB_SERIAL_NUMBER            // 3
+};
+
+static uint16_t _desc_str[64];
+
+uint16_t const *tud_descriptor_string_cb(uint8_t index, uint16_t langid) {
+  (void) langid;
+  size_t chr_count = 0;
+  const char *str = NULL;
+
+  if (index == 0) {
+    memcpy(&_desc_str[1], string_desc_arr[0], 2);
+    chr_count = 1;
+  } else if (index < (sizeof(string_desc_arr) / sizeof(string_desc_arr[0]))) {
+    str = string_desc_arr[index];
+    chr_count = strlen(str);
+  } else return NULL;
+
+  if (index != 0) {
+    for (size_t i = 0; i < chr_count; i++) _desc_str[1 + i] = (uint16_t) str[i];
+  }
+
+  _desc_str[0] = (uint16_t) ((TUSB_DESC_STRING << 8) | (2 * chr_count + 2));
+  return _desc_str;
+}
